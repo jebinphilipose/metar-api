@@ -1,9 +1,13 @@
+import json
 import logging
 import re
 import requests
+from datetime import timedelta
 from flask import Blueprint, request
+from api.redis import redis_connect
 
 metar_resource = Blueprint('metar', __name__)
+r = redis_connect()  # Get redis client
 
 
 # Utility for converting wind direction in degrees to cardinal direction
@@ -11,6 +15,18 @@ def wind_dir(wind_deg):
     val = int((wind_deg / 22.5) + 0.5)
     arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
     return arr[(val % 16)]
+
+
+# Utility for fetching api reponse from redis cache
+def get_response_from_cache(scode):
+    response = r.get(scode)
+    return response
+
+
+# Utility for saving api response in redis cache
+def set_response_in_cache(scode, response):
+    state = r.setex(scode, timedelta(minutes=5), response)
+    return state
 
 
 # Define your routes here
@@ -29,6 +45,25 @@ def info():
         return {'error': 'Station code not provided'}, 400
 
     scode = scode.upper()
+
+    # Check for nocache
+    nocache = request.args.get('nocache')
+
+    if (nocache == '1'):
+        # Refresh redis cache
+        print('nocache is 1')
+        print('Deleting key from redis if present')
+        r.delete(scode)
+
+    # Fetch response from redis cache
+    cached_res = get_response_from_cache(scode)
+
+    # If cache is found then return cached response
+    if cached_res is not None:
+        print('Getting response from redis')
+        print(f'TTL for {scode} - {r.ttl(scode)}')
+        cached_res = json.loads(cached_res)
+        return cached_res, 200
 
     url = f'https://tgftp.nws.noaa.gov/data/observations/metar/stations/{scode}.TXT'
 
@@ -123,6 +158,14 @@ def info():
                 'wind': wind_result,
             }
         }
+
+        # Set response in redis cache
+        state = set_response_in_cache(scode, json.dumps(api_response))
+        print('Setting response in redis')
+        print(f'TTL for {scode} - {r.ttl(scode)}')
+
+        if not state:
+            print('Response could not be set in Redis')
 
         return api_response, 200
 
