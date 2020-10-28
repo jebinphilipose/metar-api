@@ -117,14 +117,14 @@ def info():
         if wind_unit == "MPS":
             # Convert to KT
             wind_speed = round(wind_speed * 1.94384)
-        if wind_gust:
-            wind_gust = round(wind_gust * 1.94384)
+            if wind_gust:
+                wind_gust = round(wind_gust * 1.94384)
 
         elif wind_unit == "KMH":
             # Convert to KT
             wind_speed = round(wind_speed * 0.539957)
-        if wind_gust:
-            wind_gust = round(wind_gust * 0.539957)
+            if wind_gust:
+                wind_gust = round(wind_gust * 0.539957)
 
         # Calculate wind speed in mph
         wind_speed_mph = round(wind_speed * 1.15078)
