@@ -11,6 +11,6 @@ def create_app():
     app.config.from_pyfile('settings.py')
 
     # Register /api/v1/metar routes
-    app.register_blueprint(metar_resource, url_prefix='/api/v1/metar')
+    app.register_blueprint(metar_resource, url_prefix='/api/v1/metar/')
 
     return app

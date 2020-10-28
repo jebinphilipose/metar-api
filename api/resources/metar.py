@@ -30,12 +30,12 @@ def set_response_in_cache(scode, response):
 
 
 # Define your routes here
-@metar_resource.route('/ping')
+@metar_resource.route('ping/')
 def ping():
     return {'data': 'pong'}, 200
 
 
-@metar_resource.route('/info')
+@metar_resource.route('info/')
 def info():
     # Grab the station code
     scode = request.args.get('scode')
